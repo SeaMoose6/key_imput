@@ -18,13 +18,15 @@ PI = math.pi
 display_width = 1000
 display_height = 750
 SIZE = (display_width, display_height)
+font = pygame.font.SysFont('Times', 25, True, False)
+font2 = pygame.font.SysFont('Times', 100, True, False)
 FPS = 60
 
 
 # functions
 
 class Box():
-    def __init__(self, display, x, y, width, height, color, img):
+    def __init__(self, display, x, y, width, height, color, img, score):
         self.display = display
         self.x = x
         self.y = y
@@ -34,6 +36,7 @@ class Box():
         self.velo = random.randint(3, 5)
         self.color = color
         self.img = img
+        self.score = score
 
     def draw_box(self):
         # pygame.draw.rect(self.display, self.color,
@@ -63,15 +66,32 @@ class Box():
         self.y += self.velo
     def is_collided(self, other):
         counter = 0
-        if (self.x <= other.x <= self.x+self.width or \
-        self.x <= other.x+other.width <= self.x+self.width) and \
+        if (self.x-50 <= other.x <= self.x+self.width or \
+        self.x <= other.x+other.width <= self.x+self.width+50) and \
         (self.y <= other.y <= self.y+ self.width or \
-        self.y <= other.y + other.width <= self.y + self.width):
-
+        self.y-45 <= other.y + other.width <= self.y + self.width+50):
+            collide_sound.play()
             counter += 1
-            other.color = WHITE
+            self.score += 1
+            other.y = random.randint(-200, -50)
         if counter == 3:
             return True
+class Score:
+    def __init__(self, time):
+        self.time = time
+
+    def draw_score(self, other):
+        text = font.render(f"Score = {other.score}", True, WHITE)
+        screen.blit(text, (50, 25))
+
+    def draw_time(self):
+        timer = font.render(f"Time = {self.time}", True, WHITE)
+        screen.blit(timer, (50, 50))
+
+    def draw_game_over(self):
+        screen.fill(BLACK)
+        game_over = font2.render("GAME OVER", True, RED)
+        screen.blit(game_over, (150, 300))
 
 pygame.init()
 
@@ -88,7 +108,7 @@ clock = pygame.time.Clock()
 player_width = 50
 x_loc = (display_width - player_width)/2
 y_loc = display_height - 2*player_width
-player = Box(screen, x_loc, y_loc, player_width, player_width, BLUE, player_img)
+player = Box(screen, x_loc, y_loc, player_width, player_width, BLUE, player_img, 0)
 
 #enemy
 enemy_width = 20
@@ -96,7 +116,7 @@ enemy_list = []
 for i in range(7):
     x_cord = random.randrange(0, display_width, 5)
     random_y = random.randrange(-100, 0, 5)
-    enemy_list.append(Box(screen, x_cord, random_y, enemy_width, enemy_width, RED, player_img))
+    enemy_list.append(Box(screen, x_cord, random_y, enemy_width, enemy_width, RED, player_img, 0))
 
 pygame.mouse.set_visible(False)
 running = True
@@ -111,6 +131,8 @@ while running:
         # check for specific user event
         if event.type == pygame.QUIT:
             running = False
+
+        score = Score(pygame.time.get_ticks())
 
         # if event.type == pygame.KEYDOWN:
         #     if event.key == pygame.K_RIGHT:
@@ -141,6 +163,15 @@ while running:
 
     player.draw_box()
     player.update()
+
+    score.draw_score(player)
+    score.draw_time()
+    if int(score.time) > 30000:
+        score.draw_game_over()
+        score.draw_score(player)
+        timer = font.render(f"Time = {30000}", True, WHITE)
+        screen.blit(timer, (50, 50))
+        score.time = 30000
 
     pygame.display.flip()
 
